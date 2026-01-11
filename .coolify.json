@@ -2,7 +2,7 @@
 	"name": "SQL Query Reviewer",
 	"type": "dockerfile",
 	"dockerfile": "Dockerfile",
-	"port": 3000,
+	"port": 80,
 	"healthcheck": {
 		"test": [
 			"CMD",
@@ -10,7 +10,7 @@
 			"--no-verbose",
 			"--tries=1",
 			"--spider",
-			"http://localhost:3000/health"
+			"http://localhost:80/health"
 		],
 		"interval": "30s",
 		"timeout": "10s",

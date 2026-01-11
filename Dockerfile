@@ -28,6 +28,6 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 RUN ls -la /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
 
-EXPOSE 3000
+EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
