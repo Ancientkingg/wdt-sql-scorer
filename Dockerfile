@@ -24,6 +24,10 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built files from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+# Verify files were copied and set permissions
+RUN ls -la /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
+
+EXPOSE 3000
 
 CMD ["nginx", "-g", "daemon off;"]
