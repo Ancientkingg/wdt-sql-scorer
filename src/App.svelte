@@ -1,6 +1,6 @@
 <script>
 	import { appStore } from './lib/store.js';
-	import { parseFeedbackToReasons, parseStatistics, normalizeQuery } from './lib/utils.js';
+	import { parseFeedbackToReasons, parseStatistics, normalizeQuery, MODEL_QUERY_SENTINEL } from './lib/utils.js';
 	import OverviewPage from './lib/OverviewPage.svelte';
 	import AssignmentPage from './lib/AssignmentPage.svelte';
 	import Modal from './lib/Modal.svelte';
@@ -37,11 +37,16 @@
 	}
 
 	function logStatisticsMismatch(queryText, normalizedQuery, queryCounts, context) {
-		if (!import.meta.env.DEV) return;
-		console.groupCollapsed(`[Statistics] mismatch ${context}`);
+		// if (!import.meta.env.DEV) return;
+		console.group(`[Statistics] mismatch @ ${context}`);
 		console.log('original query:', queryText);
 		console.log('normalized query:', normalizedQuery);
-		console.log('statistics keys sample:', Array.from(queryCounts.keys()).slice(0, 10));
+		console.log(`statistics has ${queryCounts.size} keys`);
+		console.log('all statistics keys:', Array.from(queryCounts.keys()));
+		const closeMatches = Array.from(queryCounts.keys()).filter(k =>
+			k.includes(normalizedQuery.slice(0, 20)) || normalizedQuery.includes(k.slice(0, 20))
+		);
+		if (closeMatches.length) console.log('possible close matches:', closeMatches);
 		console.groupEnd();
 	}
 
@@ -110,11 +115,12 @@
 			queries: data.queries.map((q, index) => {
 				const queryText = q.query ? q.query.trim() : '';
 				const normalizedQuery = normalizeQuery(queryText);
-				
+
 				let clusterCount = 1;
 				let selectedReasons = [];
 				if (hasStatistics) {
-					const foundCount = queryCounts.get(normalizedQuery);
+					const isCorrect = q.points === 100 && q.feedback?.toLowerCase().includes('correct');
+					const foundCount = queryCounts.get(normalizedQuery) ?? (isCorrect ? queryCounts.get(MODEL_QUERY_SENTINEL) : undefined);
 					if (foundCount) {
 						clusterCount = foundCount;
 						matchedCount++;

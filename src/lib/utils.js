@@ -120,12 +120,14 @@ export function parseFeedbackToReasons(feedback) {
     return matches ? matches : [];
 }
 
+export const MODEL_QUERY_SENTINEL = '__MODEL_QUERY__';
+
 /**
  * Parse cluster statistics from imported data.
  * Supports two formats:
  *  - Raw text with StatisticsCluster blocks (Count, query fields)
  *  - Pre-parsed queries array with clusterCount
- * @param {Object} data
+ * @param {any} data
  * @returns {Map<string, number>} query text -> student count
  */
 export function parseStatistics(data) {
@@ -142,8 +144,11 @@ export function parseStatistics(data) {
             if (countMatch && queryMatch) {
                 const count = parseInt(countMatch[1]);
                 const query = queryMatch[1].trim();
-                const normalizedQuery = normalizeQuery(query);
-                queryCounts.set(normalizedQuery, count);
+                if (query === 'This is a model query!') {
+                    queryCounts.set(MODEL_QUERY_SENTINEL, count);
+                } else if (query !== 'Queries with errors!') {
+                    queryCounts.set(normalizeQuery(query), count);
+                }
             } else if (countMatch && !queryMatch) {
                 console.warn('parseStatistics: failed to parse query block in cluster', cluster);
             }
@@ -167,5 +172,9 @@ export function parseStatistics(data) {
  * @returns {string}
  */
 export function normalizeQuery(query) {
-    return query.trim().replace(/\s+/g, ' ');
+    return query
+        .replace(/--[^\n]*/g, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .trim()
+        .replace(/\s+/g, ' ');
 }

@@ -1,7 +1,7 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
 	import { appStore } from './store.js';
-	import { parseStatistics, normalizeQuery } from './utils.js';
+	import { parseStatistics, normalizeQuery, MODEL_QUERY_SENTINEL } from './utils.js';
 	import RubricTab from './RubricTab.svelte';
 	import ReviewTab from './ReviewTab.svelte';
 	import StatisticsTab from './StatisticsTab.svelte';
@@ -140,11 +140,16 @@
 	}
 
 	function logStatisticsMismatch(queryText, normalizedQuery, queryCounts, context) {
-		if (!import.meta.env.DEV) return;
-		console.groupCollapsed(`[Statistics] mismatch ${context}`);
+		// if (!import.meta.env.DEV) return;
+		console.group(`[Statistics] mismatch @ ${context}`);
 		console.log('original query:', queryText);
 		console.log('normalized query:', normalizedQuery);
-		console.log('statistics keys sample:', Array.from(queryCounts.keys()).slice(0, 10));
+		console.log(`statistics has ${queryCounts.size} keys`);
+		console.log('all statistics keys:', Array.from(queryCounts.keys()));
+		const closeMatches = Array.from(queryCounts.keys()).filter(k =>
+			k.includes(normalizedQuery.slice(0, 20)) || normalizedQuery.includes(k.slice(0, 20))
+		);
+		if (closeMatches.length) console.log('possible close matches:', closeMatches);
 		console.groupEnd();
 	}
 
@@ -175,8 +180,9 @@
 							if (a.id === assignment.id) {
 								const updatedQueries = a.queries.map(q => {
 									const normalizedQuery = normalizeQuery(q.query);
-									const clusterCount = queryCounts.get(normalizedQuery);
-									
+									const isCorrect = q.originalPoints === 100 && q.originalFeedback?.toLowerCase().includes('correct');
+									const clusterCount = queryCounts.get(normalizedQuery) ?? (isCorrect ? queryCounts.get(MODEL_QUERY_SENTINEL) : undefined);
+
 									if (clusterCount) {
 										matchedCount++;
 										totalStudents += clusterCount;
@@ -184,6 +190,7 @@
 									} else {
 										unmatchedCount++;
 										totalStudents += 1;
+										logStatisticsMismatch(q.query, normalizedQuery, queryCounts, `statistics import query "${q.query.slice(0, 40)}"`);
 										return { ...q, clusterCount: 1 };
 									}
 								});
