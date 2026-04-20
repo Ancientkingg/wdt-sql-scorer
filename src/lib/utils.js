@@ -1,37 +1,57 @@
+/**
+ * Check if a query is the "correct" reference answer.
+ * A query counts as correct if it has 100 points and feedback containing "correct".
+ * @param {Object} query
+ * @returns {boolean}
+ */
 export function isCorrectQuery(query) {
     return query.originalPoints === 100 &&
         query.originalFeedback &&
         query.originalFeedback.toLowerCase().includes('correct');
 }
 
+/**
+ * Compute the score for a query based on selected rubric reasons.
+ * Starts at 100 and adds each reason's points (negative = deduction).
+ * Clamped to [0, 100].
+ * @param {Object} query
+ * @param {Array} rubric
+ * @returns {number}
+ */
 export function calculateQueryScore(query, rubric) {
     let score = 100;
     query.selectedReasons.forEach(reasonId => {
         const reason = rubric.find(r => r.id === reasonId);
         if (reason) {
-            score -= reason.points;
+            score += reason.points;
         }
     });
-    return Math.max(0, score);
+    return Math.max(0, Math.min(100, score));
 }
 
+/**
+ * Syntax-highlight a SQL string for display.
+ * Returns an HTML string with <span> tags for keywords, functions, strings, numbers.
+ * Also reformats whitespace and injects line breaks before major clauses.
+ * @param {string} sql
+ * @returns {string} highlighted HTML
+ */
 export function highlightSQL(sql) {
     if (!sql) return '';
 
-    // Trim leading and trailing whitespace
     sql = sql.trim();
 
-    // Remove line breaks and collapse multiple spaces into single spaces
+    // Collapse whitespace
     sql = sql.replace(/\n/g, ' ').replace(/\s+/g, ' ');
 
-    // Add linebreaks before major SQL keywords for better readability
+    // Add linebreaks before major SQL clauses
     const linebreakKeywords = [
         'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'OFFSET',
         'UNION', 'INTERSECT', 'EXCEPT', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
         'FULL JOIN', 'CROSS JOIN', 'JOIN'
     ];
 
-    // Sort by length descending to match longer phrases first
+    // Match longer phrases first to avoid partial replacements
     linebreakKeywords.sort((a, b) => b.length - a.length);
 
     linebreakKeywords.forEach(keyword => {
@@ -70,12 +90,12 @@ export function highlightSQL(sql) {
         );
     });
 
-    // Highlight strings
+    // Highlight strings (single-quoted)
     highlighted = highlighted.replace(/'([^']*)'/g,
         "<span class='string'>'$1'</span>"
     );
 
-    // Highlight numbers
+    // Highlight numeric literals
     highlighted = highlighted.replace(/\b(\d+)\b/g,
         "<span class='number'>$1</span>"
     );
@@ -89,8 +109,59 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/**
+ * Extract reason IDs (R1, R2, etc.) from a feedback string.
+ * @param {string} feedback
+ * @returns {string[]}
+ */
 export function parseFeedbackToReasons(feedback) {
     if (!feedback) return [];
     const matches = feedback.match(/R\d+/g);
     return matches ? matches : [];
+}
+
+/**
+ * Parse cluster statistics from imported data.
+ * Supports two formats:
+ *  - Raw text with StatisticsCluster blocks (Count, query fields)
+ *  - Pre-parsed queries array with clusterCount
+ * @param {Object} data
+ * @returns {Map<string, number>} query text -> student count
+ */
+export function parseStatistics(data) {
+    const queryCounts = new Map();
+
+    if (data.statistics) {
+        // Text format: split by cluster headers
+        const clusters = data.statistics.split('StatisticsCluster').filter(c => c.trim());
+
+        clusters.forEach(cluster => {
+            const countMatch = cluster.match(/Count=\s*(\d+)/);
+            const queryMatch = cluster.match(/query=\s*([\s\S]+?)(?=\n\n|$)/);
+
+            if (countMatch && queryMatch) {
+                const count = parseInt(countMatch[1]);
+                const query = queryMatch[1].trim();
+                queryCounts.set(query, count);
+            }
+        });
+    } else if (data.queries && data.queries.length > 0 && data.queries[0].clusterCount !== undefined) {
+        // Already has cluster counts embedded in queries
+        data.queries.forEach(q => {
+            if (q.query && q.clusterCount !== undefined) {
+                queryCounts.set(q.query.trim(), q.clusterCount);
+            }
+        });
+    }
+
+    return queryCounts;
+}
+
+/**
+ * Normalize a query string for fuzzy matching (trim + collapse whitespace).
+ * @param {string} query
+ * @returns {string}
+ */
+export function normalizeQuery(query) {
+    return query.trim().replace(/\s+/g, ' ');
 }

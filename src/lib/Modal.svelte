@@ -4,12 +4,14 @@
 	export let isOpen = false;
 	export let title = '';
 	export let message = '';
-	export let type = 'alert'; // 'alert' or 'confirm'
+	export let type = 'alert'; // 'alert', 'confirm', or 'input'
+	export let inputValue = '';
+	export let inputPlaceholder = '';
 
 	const dispatch = createEventDispatcher();
 
 	function handleConfirm() {
-		dispatch('confirm');
+		dispatch('confirm', { value: inputValue });
 		close();
 	}
 
@@ -25,8 +27,10 @@
 	function handleKeydown(event) {
 		if (event.key === 'Escape') {
 			handleCancel();
-		} else if (event.key === 'Enter' && type === 'alert') {
-			handleConfirm();
+		} else if (event.key === 'Enter') {
+			if (type === 'alert' || (type === 'input' && inputValue.trim())) {
+				handleConfirm();
+			}
 		}
 	}
 </script>
@@ -38,12 +42,25 @@
 				<h3 id="modal-title">{title}</h3>
 			</div>
 			<div class="modal-body">
-				<p>{message}</p>
+				{#if message}
+					<p class="modal-message">{message}</p>
+				{/if}
+				{#if type === 'input'}
+					<input
+						type="text"
+						class="modal-input"
+						bind:value={inputValue}
+						placeholder={inputPlaceholder}
+					/>
+				{/if}
 			</div>
 			<div class="modal-footer">
 				{#if type === 'confirm'}
 					<button class="secondary-btn" on:click={handleCancel}>Cancel</button>
 					<button class="danger-btn" on:click={handleConfirm}>Confirm</button>
+				{:else if type === 'input'}
+					<button class="secondary-btn" on:click={handleCancel}>Cancel</button>
+					<button class="primary-btn" on:click={handleConfirm} disabled={!inputValue.trim()}>Save</button>
 				{:else}
 					<button class="primary-btn" on:click={handleConfirm}>OK</button>
 				{/if}
@@ -115,6 +132,28 @@
 		margin: 0;
 		color: var(--text-primary);
 		line-height: 1.6;
+	}
+
+	.modal-message {
+		white-space: pre-line;
+	}
+
+	.modal-input {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid var(--border-color);
+		border-radius: 6px;
+		font-size: 0.875rem;
+		color: var(--text-primary);
+		background: var(--bg-primary);
+		margin-top: 1rem;
+		font-family: inherit;
+	}
+
+	.modal-input:focus {
+		outline: none;
+		border-color: var(--primary-color);
+		box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 	}
 
 	.modal-footer {

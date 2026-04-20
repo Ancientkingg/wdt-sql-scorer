@@ -1,0 +1,21 @@
+WDT SQL REVIEWER:
+[x] add ability to edit rubric and reorder them
+[x] statistics for each rubric item: amount of students affected, amount of queries affected.
+[x] parse statistics per query and show them next to the points
+[x] also showcase how many students have the correct query
+[x] ability to copy the rubric easily into like a word table
+[x] toggle button to change feedback to r1,r2 or full feedback
+[x] ability to change the output file name before exporting
+[x] ability to add positive points
+[x] make points deducted -> points (and just use the signs) (-100 <-> 100)
+[x] add rubric into exported json
+[x] optional if you load the statistics
+[x] add actual statistics like average std, graphs like weblab
+
+[x] add optional space or overlay for question/task itself (maybe even with schema)
+[x] fix bug with keybinds and make it expandable
+[x] change layout to 2/3rds and independent scrolling per pane (similar to zesje)
+[x] make panes adjustable
+[x] directly upload the image instead of having a link
+[x] add documentation for entire project to explain what is happening, how to use it, functionalities
+[x] add ability change title

@@ -1,5 +1,9 @@
 import { writable } from 'svelte/store';
 
+/**
+ * App-level Svelte store backed by localStorage.
+ * Holds the list of assignments and navigation state.
+ */
 function createAppStore() {
     const { subscribe, set, update } = writable({
         assignments: [],
@@ -7,7 +11,7 @@ function createAppStore() {
         currentQueryIndex: 0
     });
 
-    // Load from localStorage
+    // Restore previous session from localStorage
     const saved = localStorage.getItem('sqlReviewerState');
     if (saved) {
         try {
@@ -26,6 +30,7 @@ function createAppStore() {
         subscribe,
         set,
         update,
+        /** Persist assignment data to localStorage. */
         saveState: (state) => {
             localStorage.setItem('sqlReviewerState', JSON.stringify({
                 assignments: state.assignments

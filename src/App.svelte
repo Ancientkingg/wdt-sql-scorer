@@ -1,6 +1,6 @@
 <script>
 	import { appStore } from './lib/store.js';
-	import { parseFeedbackToReasons } from './lib/utils.js';
+	import { parseFeedbackToReasons, parseStatistics, normalizeQuery } from './lib/utils.js';
 	import OverviewPage from './lib/OverviewPage.svelte';
 	import AssignmentPage from './lib/AssignmentPage.svelte';
 	import Modal from './lib/Modal.svelte';
@@ -78,19 +78,69 @@
 	}
 
 	function importAssignment(data, filename) {
+		// Get cluster counts from statistics data
+		const queryCounts = parseStatistics(data);
+		const hasStatistics = queryCounts.size > 0;
+		
+		let matchedCount = 0;
+		let unmatchedCount = 0;
+		
+		const importedRubric = data.rubric && Array.isArray(data.rubric) ? data.rubric : [];
+		
+		// Detect how feedback was exported so we can re-parse it
+		const feedbackFormat = data._metadata?.feedbackFormat || 'unknown';
+		
 		const assignment = {
 			id: Date.now().toString(),
 			name: filename.replace(/\.(json|txt)$/, ''),
 			schema: data.schema || 'unknown',
 			originalData: data,
-			queries: data.queries.map((q, index) => ({
-				query: q.query ? q.query.trim() : '',
-				originalPoints: q.points,
-				originalFeedback: q.feedback,
-				selectedReasons: parseFeedbackToReasons(q.feedback),
-				graded: q.feedback && q.feedback.trim() !== ''
-			})),
-			rubric: [],
+			hasStatistics: hasStatistics,
+			taskDescription: data.taskDescription || '',
+			schemaImage: data.schemaImage || '',
+			queries: data.queries.map((q, index) => {
+				const queryText = q.query ? q.query.trim() : '';
+				const normalizedQuery = normalizeQuery(queryText);
+				
+				let clusterCount = 1;
+				if (hasStatistics) {
+					const foundCount = queryCounts.get(queryText) || queryCounts.get(normalizedQuery);
+					if (foundCount) {
+						clusterCount = foundCount;
+						matchedCount++;
+					} else {
+						unmatchedCount++;
+					}
+				}
+				
+				// Determine selectedReasons from available data
+				let selectedReasons = [];
+				if (q._selectedReasons && Array.isArray(q._selectedReasons)) {
+					// Re-import: use stored reason IDs
+					selectedReasons = q._selectedReasons;
+				} else if (feedbackFormat === 'ids' || feedbackFormat === 'unknown') {
+					// Parse R1, R2, etc. from feedback text
+					selectedReasons = parseFeedbackToReasons(q.feedback);
+				} else if (feedbackFormat === 'descriptions' && importedRubric.length > 0) {
+					// Match full descriptions back to reason IDs
+					const feedbackText = q.feedback || '';
+					importedRubric.forEach(reason => {
+						if (feedbackText.includes(reason.description)) {
+							selectedReasons.push(reason.id);
+						}
+					});
+				}
+				
+				return {
+					query: queryText,
+					originalPoints: q.points,
+					originalFeedback: q.feedback,
+					selectedReasons: selectedReasons,
+					graded: q.feedback && q.feedback.trim() !== '',
+					clusterCount: clusterCount
+				};
+			}),
+			rubric: importedRubric,
 			createdAt: new Date().toISOString()
 		};
 
@@ -102,6 +152,19 @@
 			appStore.saveState(newState);
 			return newState;
 		});
+		
+		// Warn if many queries didn't match statistics
+		if (hasStatistics) {
+			const totalQueries = matchedCount + unmatchedCount;
+			const matchPercentage = Math.round((matchedCount / totalQueries) * 100);
+			
+			if (unmatchedCount > 0 && matchPercentage < 80) {
+				showAlert(
+					'Import Notice',
+					`Assignment imported successfully!\n\n⚠️ Statistics Note: Only ${matchedCount}/${totalQueries} queries matched (${matchPercentage}%). ${unmatchedCount} queries will default to 1 student each.`
+				);
+			}
+		}
 	}
 
 	function deleteAssignment(id) {
@@ -125,7 +188,7 @@
 		const assignment = state.assignments.find(a => a.id === id);
 		if (!assignment) return;
 
-		// Find first non-correct query to start with
+		// Skip to first non-correct query
 		let queryIndex = 0;
 		while (queryIndex < assignment.queries.length) {
 			const query = assignment.queries[queryIndex];
