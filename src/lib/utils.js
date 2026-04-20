@@ -137,19 +137,23 @@ export function parseStatistics(data) {
 
         clusters.forEach(cluster => {
             const countMatch = cluster.match(/Count=\s*(\d+)/);
-            const queryMatch = cluster.match(/query=\s*([\s\S]+?)(?=\n\n|$)/);
+            const queryMatch = cluster.match(/query=\s*([\s\S]*)/);
 
             if (countMatch && queryMatch) {
                 const count = parseInt(countMatch[1]);
                 const query = queryMatch[1].trim();
-                queryCounts.set(query, count);
+                const normalizedQuery = normalizeQuery(query);
+                queryCounts.set(normalizedQuery, count);
+            } else if (countMatch && !queryMatch) {
+                console.warn('parseStatistics: failed to parse query block in cluster', cluster);
             }
         });
     } else if (data.queries && data.queries.length > 0 && data.queries[0].clusterCount !== undefined) {
         // Already has cluster counts embedded in queries
         data.queries.forEach(q => {
             if (q.query && q.clusterCount !== undefined) {
-                queryCounts.set(q.query.trim(), q.clusterCount);
+                const normalizedQuery = normalizeQuery(q.query.trim());
+                queryCounts.set(normalizedQuery, q.clusterCount);
             }
         });
     }

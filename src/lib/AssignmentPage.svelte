@@ -139,6 +139,15 @@
 		statisticsFileInput.click();
 	}
 
+	function logStatisticsMismatch(queryText, normalizedQuery, queryCounts, context) {
+		if (!import.meta.env.DEV) return;
+		console.groupCollapsed(`[Statistics] mismatch ${context}`);
+		console.log('original query:', queryText);
+		console.log('normalized query:', normalizedQuery);
+		console.log('statistics keys sample:', Array.from(queryCounts.keys()).slice(0, 10));
+		console.groupEnd();
+	}
+
 	function handleStatisticsImport(event) {
 		const file = event.target.files[0];
 		if (!file) return;
@@ -166,7 +175,7 @@
 							if (a.id === assignment.id) {
 								const updatedQueries = a.queries.map(q => {
 									const normalizedQuery = normalizeQuery(q.query);
-									const clusterCount = queryCounts.get(q.query) || queryCounts.get(normalizedQuery);
+									const clusterCount = queryCounts.get(normalizedQuery);
 									
 									if (clusterCount) {
 										matchedCount++;

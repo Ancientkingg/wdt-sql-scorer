@@ -36,6 +36,15 @@
 		modalOpen = true;
 	}
 
+	function logStatisticsMismatch(queryText, normalizedQuery, queryCounts, context) {
+		if (!import.meta.env.DEV) return;
+		console.groupCollapsed(`[Statistics] mismatch ${context}`);
+		console.log('original query:', queryText);
+		console.log('normalized query:', normalizedQuery);
+		console.log('statistics keys sample:', Array.from(queryCounts.keys()).slice(0, 10));
+		console.groupEnd();
+	}
+
 	function handleModalConfirm() {
 		if (modalCallback) {
 			modalCallback();
@@ -103,21 +112,16 @@
 				const normalizedQuery = normalizeQuery(queryText);
 				
 				let clusterCount = 1;
+				let selectedReasons = [];
 				if (hasStatistics) {
-					const foundCount = queryCounts.get(queryText) || queryCounts.get(normalizedQuery);
+					const foundCount = queryCounts.get(normalizedQuery);
 					if (foundCount) {
 						clusterCount = foundCount;
 						matchedCount++;
 					} else {
 						unmatchedCount++;
+							logStatisticsMismatch(queryText, normalizedQuery, queryCounts, `assignment import index ${index}`);
 					}
-				}
-				
-				// Determine selectedReasons from available data
-				let selectedReasons = [];
-				if (q._selectedReasons && Array.isArray(q._selectedReasons)) {
-					// Re-import: use stored reason IDs
-					selectedReasons = q._selectedReasons;
 				} else if (feedbackFormat === 'ids' || feedbackFormat === 'unknown') {
 					// Parse R1, R2, etc. from feedback text
 					selectedReasons = parseFeedbackToReasons(q.feedback);
