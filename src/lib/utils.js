@@ -139,14 +139,24 @@ export function parseStatistics(data) {
 
         clusters.forEach(cluster => {
             const countMatch = cluster.match(/Count=\s*(\d+)/);
+            const pointsMatch = cluster.match(/Points=\s*(-?\d+)/);
             const queryMatch = cluster.match(/query=\s*([\s\S]*)/);
 
             if (countMatch && queryMatch) {
                 const count = parseInt(countMatch[1]);
+                const points = pointsMatch ? parseInt(pointsMatch[1]) : null;
                 const query = queryMatch[1].trim();
+
                 if (query === 'This is a model query!') {
-                    queryCounts.set(MODEL_QUERY_SENTINEL, count);
-                } else if (query !== 'Queries with errors!') {
+                    if (points === 100) {
+                        queryCounts.set(MODEL_QUERY_SENTINEL, count);
+                    } else {
+                        // Students who literally submitted placeholder text as a wrong answer
+                        queryCounts.set(normalizeQuery(query), count);
+                    }
+                } else if (query === 'Queries with errors!' || query === 'Empty result set!') {
+                    // skip — no meaningful query to match against
+                } else {
                     queryCounts.set(normalizeQuery(query), count);
                 }
             } else if (countMatch && !queryMatch) {
@@ -176,5 +186,8 @@ export function normalizeQuery(query) {
         .replace(/--[^\n]*/g, '')
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .trim()
-        .replace(/\s+/g, ' ');
+        .replace(/\s+/g, ' ')
+        .replace(/\(\s+/g, '(')
+        .replace(/\s+\)/g, ')')
+        .replace(/;$/, '');
 }
