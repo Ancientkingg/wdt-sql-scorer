@@ -16,6 +16,7 @@ A Svelte-based tool for grading SQL queries. Built for TAs grading WDT SQL assig
 - **Statistics**: Upload a statistics file to see student counts per query. The Statistics tab shows average, std dev, median, histogram, and cumulative distribution. Toggle between per-query and per-student views.
 - **Title Editing**: Double-click the assignment title to rename it.
 - **Feedback Modes**: Toggle between exporting feedback as reason IDs (R1, R2) or full text with IDs (R1: description).
+- **Bulk Export ZIP**: Use the overview page button to export all assignments at once as shareable JSON files inside one ZIP.
 - **Persistence**: All data is saved to localStorage automatically.
 
 ## Prerequisites
@@ -94,6 +95,7 @@ Upload a statistics `.txt` file to load student counts. The Statistics tab becom
 
 - Click "Share JSON" to download a full project JSON file with metadata.
 - Click "Export WebLab JSON" to copy a WebLab-compatible JSON payload to your clipboard.
+- Click "Bulk Export ZIP" on the overview page to download all assignments as share JSON files in one ZIP.
 - If clipboard access is blocked, the app falls back to file download.
 - Use the IDs/Full switch to export feedback as `R1, R2` or `R1: description`.
 
