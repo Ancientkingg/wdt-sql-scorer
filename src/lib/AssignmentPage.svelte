@@ -47,11 +47,11 @@
 			let feedback;
 			if (query.selectedReasons.length > 0) {
 				if (useFeedbackDescriptions) {
-					// Export full descriptions
+					// Export full descriptions prefixed with reason ID (e.g., R1: ...)
 					feedback = query.selectedReasons
 						.map(reasonId => {
 							const reason = assignment.rubric.find(r => r.id === reasonId);
-							return reason ? reason.description : reasonId;
+							return reason ? `${reason.id}: ${reason.description}` : reasonId;
 						})
 						.join(', ');
 				} else {
@@ -93,6 +93,34 @@
 			})),
 			queries: buildExportQueries(true)
 		};
+	}
+
+	async function copyTextToClipboard(text) {
+		if (navigator.clipboard?.writeText) {
+			try {
+				await navigator.clipboard.writeText(text);
+				return true;
+			} catch (error) {
+				console.error('Clipboard API copy failed:', error);
+			}
+		}
+
+		try {
+			const textArea = document.createElement('textarea');
+			textArea.value = text;
+			textArea.style.position = 'fixed';
+			textArea.style.left = '-9999px';
+			textArea.style.top = '0';
+			document.body.appendChild(textArea);
+			textArea.focus();
+			textArea.select();
+			const copied = document.execCommand('copy');
+			document.body.removeChild(textArea);
+			return copied;
+		} catch (error) {
+			console.error('Fallback clipboard copy failed:', error);
+			return false;
+		}
 	}
 
 	function buildWebLabExportData() {
@@ -146,7 +174,17 @@
 	}
 
 	async function handleWebLabExport() {
-		await saveExportData(buildWebLabExportData(), `${assignment.name}_graded.json`);
+		const exportData = buildWebLabExportData();
+		const dataStr = JSON.stringify(exportData, null, 2);
+		const copied = await copyTextToClipboard(dataStr);
+
+		if (copied) {
+			showAlert('Copied to Clipboard', 'WebLab JSON was copied to clipboard.');
+			return;
+		}
+
+		showAlert('Clipboard Copy Failed', 'Could not copy WebLab JSON to clipboard, so a file download will be used instead.');
+		await saveExportData(exportData, `${assignment.name}_graded.json`);
 	}
 
 	function handleFilenameConfirm() {
@@ -409,16 +447,16 @@
 					<input 
 						type="checkbox" 
 						bind:checked={useFeedbackDescriptions}
-						title={useFeedbackDescriptions ? 'Currently exporting full feedback descriptions' : 'Currently exporting reason IDs (R1, R2...)'}
+						title={useFeedbackDescriptions ? 'Currently exporting full feedback with reason IDs (e.g., R1: ...)' : 'Currently exporting reason IDs (R1, R2...)'}
 					/>
 					<span class="slider"></span>
 				</label>
-				<span class="toggle-label" title="Export feedback as full text descriptions">📝 Full</span>
+				<span class="toggle-label" title="Export feedback as full text with reason IDs">📝 Full</span>
 			</div>
 			<button class="secondary-btn" on:click={handleShareExport} title="Export project-specific JSON with metadata for sharing and re-importing">
 				Share JSON
 			</button>
-			<button class="primary-btn" on:click={handleWebLabExport} title="Export WebLab-compatible JSON without project metadata and selected reasons">
+			<button class="primary-btn" on:click={handleWebLabExport} title="Copy WebLab-compatible JSON to clipboard without project metadata and selected reasons">
 				Export WebLab JSON
 			</button>
 		</div>
