@@ -44,18 +44,23 @@ export function highlightSQL(sql) {
     // Collapse whitespace
     sql = sql.replace(/\n/g, ' ').replace(/\s+/g, ' ');
 
-    // Add linebreaks before major SQL clauses
-    const linebreakKeywords = [
-        'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'OFFSET',
-        'UNION', 'INTERSECT', 'EXCEPT', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
-        'FULL JOIN', 'CROSS JOIN', 'JOIN'
+    // Add linebreaks before major SQL clauses. Handle JOIN variants together to avoid
+    // splitting "LEFT JOIN" into separate lines when "JOIN" is processed later.
+    const clauseBreakRegexes = [
+        /\s+(FROM)\s+/gi,
+        /\s+(WHERE)\s+/gi,
+        /\s+(GROUP\s+BY)\s+/gi,
+        /\s+(ORDER\s+BY)\s+/gi,
+        /\s+(HAVING)\s+/gi,
+        /\s+(LIMIT)\s+/gi,
+        /\s+(OFFSET)\s+/gi,
+        /\s+(UNION)\s+/gi,
+        /\s+(INTERSECT)\s+/gi,
+        /\s+(EXCEPT)\s+/gi,
+        /\s+((?:INNER|LEFT|RIGHT|FULL|CROSS)\s+JOIN|JOIN)\s+/gi
     ];
 
-    // Match longer phrases first to avoid partial replacements
-    linebreakKeywords.sort((a, b) => b.length - a.length);
-
-    linebreakKeywords.forEach(keyword => {
-        const regex = new RegExp(`\\s+(${keyword})\\s+`, 'gi');
+    clauseBreakRegexes.forEach(regex => {
         sql = sql.replace(regex, '\n$1 ');
     });
 
