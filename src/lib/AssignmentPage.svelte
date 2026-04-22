@@ -33,8 +33,51 @@
 		activeTab = tabName;
 	}
 
-	async function handleExport() {
-		const exportData = {
+	function buildExportQueries(includeSelectedReasons = false) {
+		return assignment.queries.map((query) => {
+			let score = 100;
+			query.selectedReasons.forEach(reasonId => {
+				const reason = assignment.rubric.find(r => r.id === reasonId);
+				if (reason) {
+					score += reason.points;
+				}
+			});
+			score = Math.max(0, Math.min(100, score));
+
+			let feedback;
+			if (query.selectedReasons.length > 0) {
+				if (useFeedbackDescriptions) {
+					// Export full descriptions
+					feedback = query.selectedReasons
+						.map(reasonId => {
+							const reason = assignment.rubric.find(r => r.id === reasonId);
+							return reason ? reason.description : reasonId;
+						})
+						.join(', ');
+				} else {
+					// Export reason IDs (R1, R2, etc.)
+					feedback = query.selectedReasons.join(', ');
+				}
+			} else {
+				feedback = query.originalFeedback;
+			}
+
+			const exportedQuery = {
+				query: query.query,
+				points: score,
+				feedback
+			};
+
+			if (includeSelectedReasons) {
+				exportedQuery._selectedReasons = query.selectedReasons;
+			}
+
+			return exportedQuery;
+		});
+	}
+
+	function buildShareExportData() {
+		return {
 			...assignment.originalData,
 			_metadata: {
 				exportedWith: 'wdt-sql-scorer',
@@ -48,52 +91,37 @@
 				description: r.description,
 				points: r.points
 			})),
-			queries: assignment.queries.map((query, index) => {
-				let score = 100;
-				query.selectedReasons.forEach(reasonId => {
-					const reason = assignment.rubric.find(r => r.id === reasonId);
-					if (reason) {
-						score += reason.points;
-					}
-				});
-				score = Math.max(0, Math.min(100, score));
-
-				let feedback;
-				if (query.selectedReasons.length > 0) {
-					if (useFeedbackDescriptions) {
-						// Export full descriptions
-						feedback = query.selectedReasons
-							.map(reasonId => {
-								const reason = assignment.rubric.find(r => r.id === reasonId);
-								return reason ? reason.description : reasonId;
-							})
-							.join(', ');
-					} else {
-						// Export reason IDs (R1, R2, etc.)
-						feedback = query.selectedReasons.join(', ');
-					}
-				} else {
-					feedback = query.originalFeedback;
-				}
-
-				return {
-					query: query.query,
-					points: score,
-					feedback: feedback,
-					_selectedReasons: query.selectedReasons
-				};
-			})
+			queries: buildExportQueries(true)
 		};
+	}
 
+	function buildWebLabExportData() {
+		const baseData = Object.fromEntries(
+			Object.entries(assignment.originalData || {}).filter(([key]) => (
+				!key.startsWith('_') &&
+				key !== 'taskDescription' &&
+				key !== 'schemaImage' &&
+				key !== 'rubric' &&
+				key !== 'queries'
+			))
+		);
+
+		return {
+			...baseData,
+			queries: buildExportQueries(false)
+		};
+	}
+
+	async function saveExportData(exportData, suggestedFilename) {
 		const dataStr = JSON.stringify(exportData, null, 2);
 		const blob = new Blob([dataStr], { type: 'application/json' });
 
 		// Native save dialog (File System Access API)
 		if ('showSaveFilePicker' in window) {
 			try {
-			// @ts-ignore - showSaveFilePicker not universally typed
-			const handle = await window.showSaveFilePicker({
-					suggestedName: `${assignment.name}_graded.json`,
+				// @ts-ignore - showSaveFilePicker not universally typed
+				const handle = await window.showSaveFilePicker({
+					suggestedName: suggestedFilename,
 					types: [{
 						description: 'JSON Files',
 						accept: { 'application/json': ['.json'] }
@@ -108,9 +136,17 @@
 		} else {
 			// Fallback for browsers without File System Access API
 			pendingExportBlob = blob;
-			exportFilename = `${assignment.name}_graded`;
+			exportFilename = suggestedFilename.replace(/\.json$/i, '');
 			showFilenameModal = true;
 		}
+	}
+
+	async function handleShareExport() {
+		await saveExportData(buildShareExportData(), `${assignment.name}_share.json`);
+	}
+
+	async function handleWebLabExport() {
+		await saveExportData(buildWebLabExportData(), `${assignment.name}_graded.json`);
 	}
 
 	function handleFilenameConfirm() {
@@ -338,7 +374,7 @@
 />
 
 <div class="page active">
-	<header>
+	<header class="assignment-header">
 		<button class="secondary-btn" on:click={() => dispatch('back')}>
 			← Back to Overview
 		</button>
@@ -379,8 +415,11 @@
 				</label>
 				<span class="toggle-label" title="Export feedback as full text descriptions">📝 Full</span>
 			</div>
-			<button class="primary-btn" on:click={handleExport}>
-				Export JSON
+			<button class="secondary-btn" on:click={handleShareExport} title="Export project-specific JSON with metadata for sharing and re-importing">
+				Share JSON
+			</button>
+			<button class="primary-btn" on:click={handleWebLabExport} title="Export WebLab-compatible JSON without project metadata and selected reasons">
+				Export WebLab JSON
 			</button>
 		</div>
 	</header>

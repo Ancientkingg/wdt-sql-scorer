@@ -19,3 +19,5 @@ WDT SQL REVIEWER:
 [x] directly upload the image instead of having a link
 [x] add documentation for entire project to explain what is happening, how to use it, functionalities
 [x] add ability change title
+[x] change current export to json to share as json button
+[x] add another button to export to weblab without metadata and selected reasons

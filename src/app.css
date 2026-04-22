@@ -95,6 +95,77 @@ header h1 {
 	color: var(--text-primary);
 }
 
+.assignment-header {
+	gap: 0.75rem;
+	padding: 1rem 1.25rem;
+}
+
+.assignment-header h1,
+.assignment-header .title-edit {
+	flex: 1 1 240px;
+	min-width: 0;
+}
+
+.assignment-header .header-actions {
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	margin: 0;
+}
+
+.assignment-header .header-actions > * {
+	margin: 0;
+}
+
+.assignment-header > .secondary-btn,
+.assignment-header .header-actions .primary-btn,
+.assignment-header .header-actions .secondary-btn {
+	padding: 0.55rem 0.95rem;
+	font-size: 0.92rem;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+
+.assignment-header .stats-badge {
+	padding: 0.4rem 0.85rem;
+	font-size: 0.82rem;
+	min-height: 34px;
+}
+
+.assignment-header .feedback-toggle-container {
+	gap: 0.45rem;
+	padding: 0.25rem 0.5rem;
+	border-radius: 6px;
+	background: var(--bg-primary);
+	min-height: 34px;
+}
+
+.assignment-header .toggle-label {
+	font-size: 0.8rem;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.assignment-header .apple-toggle {
+	width: 45px;
+	height: 27px;
+}
+
+.assignment-header .apple-toggle .slider {
+	border-radius: 27px;
+}
+
+.assignment-header .apple-toggle .slider:before {
+	height: 23px;
+	width: 23px;
+	left: 2px;
+	bottom: 2px;
+}
+
+.assignment-header .apple-toggle input:checked + .slider:before {
+	transform: translateX(18px);
+}
+
 .header-actions {
 	display: flex;
 	gap: 1rem;
@@ -1380,6 +1451,10 @@ button:disabled {
 		text-align: center;
 	}
 
+	.assignment-header {
+		padding: 0.9rem 1rem;
+	}
+
 	header h1 {
 		font-size: 1.5rem;
 	}
@@ -1387,6 +1462,21 @@ button:disabled {
 	.header-actions {
 		width: 100%;
 		justify-content: center;
+	}
+
+	.assignment-header .header-actions {
+		gap: 0.45rem;
+	}
+
+	.assignment-header > .secondary-btn,
+	.assignment-header .header-actions .primary-btn,
+	.assignment-header .header-actions .secondary-btn {
+		padding: 0.5rem 0.8rem;
+		font-size: 0.85rem;
+	}
+
+	.assignment-header .feedback-toggle-container {
+		padding: 0.2rem 0.4rem;
 	}
 
 	#assignments-list {
