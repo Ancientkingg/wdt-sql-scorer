@@ -1,4 +1,6 @@
 <script>
+	// @ts-ignore - jszip type resolution can fail in JS Svelte files, runtime import is valid
+	import JSZip from 'jszip';
 	import { appStore } from './lib/store.js';
 	import { parseFeedbackToReasons, parseStatistics, normalizeQuery, MODEL_QUERY_SENTINEL } from './lib/utils.js';
 	import OverviewPage from './lib/OverviewPage.svelte';
@@ -69,6 +71,95 @@
 
 	function handleImportClick() {
 		fileInput.click();
+	}
+
+	function sanitizeFilename(name) {
+		const normalizedName = String(name || 'assignment')
+			.trim()
+			.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+			.replace(/\s+/g, '_')
+			.replace(/_+/g, '_');
+
+		return normalizedName || 'assignment';
+	}
+
+	function buildShareExportData(assignment) {
+		return {
+			...(assignment.originalData || {}),
+			_metadata: {
+				exportedWith: 'wdt-sql-scorer',
+				exportDate: new Date().toISOString(),
+				feedbackFormat: 'ids'
+			},
+			taskDescription: assignment.taskDescription || undefined,
+			schemaImage: assignment.schemaImage || undefined,
+			rubric: assignment.rubric.map(r => ({
+				id: r.id,
+				description: r.description,
+				points: r.points
+			})),
+			queries: assignment.queries.map(query => {
+				let score = 100;
+				query.selectedReasons.forEach(reasonId => {
+					const reason = assignment.rubric.find(r => r.id === reasonId);
+					if (reason) score += reason.points;
+				});
+				score = Math.max(0, Math.min(100, score));
+
+				return {
+					query: query.query,
+					points: score,
+					feedback: query.selectedReasons.length > 0 ? query.selectedReasons.join(', ') : query.originalFeedback,
+					_selectedReasons: query.selectedReasons
+				};
+			})
+		};
+	}
+
+	async function handleBulkExport() {
+		if (state.assignments.length === 0) {
+			showAlert('No Assignments', 'Import at least one assignment before running bulk export.');
+			return;
+		}
+
+		try {
+			const zip = new JSZip();
+			const usedNames = new Set();
+
+			state.assignments.forEach((assignment, index) => {
+				const baseName = sanitizeFilename(assignment.name || `assignment_${index + 1}`);
+				let uniqueName = baseName;
+				let counter = 2;
+
+				while (usedNames.has(uniqueName.toLowerCase())) {
+					uniqueName = `${baseName}_${counter}`;
+					counter++;
+				}
+
+				usedNames.add(uniqueName.toLowerCase());
+				zip.file(`${uniqueName}.json`, JSON.stringify(buildShareExportData(assignment), null, 2));
+			});
+
+			const zipBlob = await zip.generateAsync({ type: 'blob' });
+			const now = new Date();
+			const dateStamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+			const downloadName = `sql-reviewer-assignments-${dateStamp}.zip`;
+
+			const url = URL.createObjectURL(zipBlob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = downloadName;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			const assignmentLabel = state.assignments.length === 1 ? 'assignment' : 'assignments';
+			showAlert('Bulk Export Complete', `Exported ${state.assignments.length} ${assignmentLabel} to ${downloadName}.`);
+		} catch (error) {
+			console.error('Bulk export failed:', error);
+			showAlert('Bulk Export Failed', 'Could not export assignments as a ZIP file. Please try again.');
+		}
 	}
 
 	function handleFileImport(event) {
@@ -235,6 +326,7 @@
 		<OverviewPage
 			assignments={state.assignments}
 			on:import={handleImportClick}
+			on:bulkExport={handleBulkExport}
 			on:delete={(e) => deleteAssignment(e.detail)}
 			on:open={(e) => openAssignment(e.detail)}
 		/>

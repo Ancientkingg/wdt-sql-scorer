@@ -18,9 +18,19 @@
 <div class="page active">
 	<header>
 		<h1>SQL Query Reviewer</h1>
-		<button class="primary-btn" on:click={() => dispatch('import')}>
-			Import JSON File
-		</button>
+		<div class="header-actions">
+			<button class="primary-btn" on:click={() => dispatch('import')}>
+				Import JSON File
+			</button>
+			<button
+				class="secondary-btn"
+				on:click={() => dispatch('bulkExport')}
+				disabled={assignments.length === 0}
+				title={assignments.length === 0 ? 'Import at least one assignment to export' : 'Export all assignments as a ZIP file'}
+			>
+				Bulk Export ZIP
+			</button>
+		</div>
 	</header>
 
 	<div class="assignments-container">
