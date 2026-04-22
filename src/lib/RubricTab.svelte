@@ -35,6 +35,13 @@
 		return { queriesAffected, studentsAffected };
 	}
 
+	function formatPoints(pointsValue) {
+		const pointsNumber = Number(pointsValue);
+		if (Number.isNaN(pointsNumber)) return String(pointsValue);
+
+		return pointsNumber > 0 ? `+${pointsNumber}` : `${pointsNumber}`;
+	}
+
 	function showAlert(title, message) {
 		modalTitle = title;
 		modalMessage = message;
@@ -332,7 +339,7 @@
 			html += '<tr>';
 			html += `<td style="padding: 8px;">${reason.id}</td>`;
 			html += `<td style="padding: 8px;">${reason.description}</td>`;
-			html += `<td style="padding: 8px;">${reason.points > 0 ? '+' : ''}${reason.points}</td>`;
+			html += `<td style="padding: 8px;">${formatPoints(reason.points)}</td>`;
 			if (assignment.hasStatistics) {
 				html += `<td style="padding: 8px;">${stats[index].studentsAffected}</td>`;
 			}
@@ -373,7 +380,7 @@
 		tsv += '\tQueries\n';
 		
 		assignment.rubric.forEach((reason, index) => {
-			tsv += `${reason.id}\t${reason.description}\t${reason.points > 0 ? '+' : ''}${reason.points}`;
+			tsv += `\t${formatPoints(reason.points)}`;
 			if (assignment.hasStatistics) {
 				tsv += `\t${stats[index].studentsAffected}`;
 			}
@@ -546,7 +553,7 @@
 							<div class="reason-content">
 								<div class="reason-id">{reason.id}</div>
 								<div class="reason-description">{reason.description}</div>
-								<div class="reason-points" class:positive-points={reason.points > 0}>{reason.points > 0 ? '+' : ''}{reason.points} points</div>
+								<div class="reason-points" class:positive-points={reason.points > 0}>{formatPoints(reason.points)} points</div>
 								{#if assignment.queries.length > 0}
 									{@const stats = calculateReasonStats(reason.id)}
 								<div class="reason-stats" class:disabled={!assignment.hasStatistics}>
