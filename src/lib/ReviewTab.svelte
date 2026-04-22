@@ -32,6 +32,13 @@
 	$: hasNext = checkHasNext();
 	$: keyboardHint = getKeyboardHint(assignment.rubric.length);
 
+	function formatReasonPoints(pointsValue) {
+		const pointsNumber = Number(pointsValue);
+		if (Number.isNaN(pointsNumber)) return String(pointsValue);
+
+		return pointsNumber > 0 ? `+${pointsNumber}` : `${pointsNumber}`;
+	}
+
 	function checkHasPrev() {
 		for (let i = state.currentQueryIndex - 1; i >= 0; i--) {
 			if (!isCorrectQuery(assignment.queries[i])) {
@@ -323,7 +330,7 @@
 											<div class="reason-checkbox-content">
 												<div class="reason-checkbox-id">{reason.id}</div>
 												<div class="reason-checkbox-desc">{reason.description}</div>
-												<div class="reason-checkbox-points">-{reason.points} points</div>
+												<div class="reason-checkbox-points">{formatReasonPoints(reason.points)} points</div>
 											</div>
 										</label>
 									{/each}
@@ -428,7 +435,7 @@
 								<div class="reason-checkbox-content">
 									<div class="reason-checkbox-id">{reason.id}</div>
 									<div class="reason-checkbox-desc">{reason.description}</div>
-									<div class="reason-checkbox-points">-{reason.points} points</div>
+									<div class="reason-checkbox-points">{formatReasonPoints(reason.points)} points</div>
 								</div>
 							</label>
 						{/each}
