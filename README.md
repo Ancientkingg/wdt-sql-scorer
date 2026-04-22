@@ -4,7 +4,7 @@ A Svelte-based tool for grading SQL queries. Built for TAs grading WDT SQL assig
 
 ## Features
 
-- **Import/Export**: Load assignment JSON files and export graded results. Re-importing preserves rubric and grading state.
+- **Import/Export**: Load assignment JSON files, export a shareable JSON file, or copy a WebLab-ready JSON payload.
 - **Rubric Management**: Create, edit, reorder, and delete rubric reasons. Each reason has a description and point value (deductions or bonuses). Copy the rubric as a formatted table for Word.
 - **Query Review**:
   - SQL syntax highlighting (keywords, functions, strings, numbers)
@@ -15,8 +15,15 @@ A Svelte-based tool for grading SQL queries. Built for TAs grading WDT SQL assig
 - **Task & Schema**: Attach a task description and database schema image (upload a file or paste a URL) for reference while grading.
 - **Statistics**: Upload a statistics file to see student counts per query. The Statistics tab shows average, std dev, median, histogram, and cumulative distribution. Toggle between per-query and per-student views.
 - **Title Editing**: Double-click the assignment title to rename it.
-- **Feedback Modes**: Toggle between exporting feedback as reason IDs (R1, R2) or full descriptions.
+- **Feedback Modes**: Toggle between exporting feedback as reason IDs (R1, R2) or full text with IDs (R1: description).
 - **Persistence**: All data is saved to localStorage automatically.
+
+## Prerequisites
+
+- Node.js installed (LTS recommended)
+- npm installed (included with Node.js)
+
+If you do not have Node.js and npm, install them from <https://nodejs.org>.
 
 ## Quick Start
 
@@ -28,6 +35,11 @@ npm run preview   # preview production build
 ```
 
 The production build creates a single `dist/index.html` with all assets inlined. Open it directly in a browser, no server required.
+
+## Hosted Version and Contact
+
+- Hosted app: <https://wdt.samuelbruin.com>
+- Questions or support: <wdt@samuelbruin.com>
 
 ## Deployment
 
@@ -80,7 +92,10 @@ Upload a statistics `.txt` file to load student counts. The Statistics tab becom
 
 ### 5. Export
 
-Click "Export JSON". Toggle between ID-based (R1, R2) and description-based feedback with the IDs/Full switch.
+- Click "Share JSON" to download a full project JSON file with metadata.
+- Click "Export WebLab JSON" to copy a WebLab-compatible JSON payload to your clipboard.
+- If clipboard access is blocked, the app falls back to file download.
+- Use the IDs/Full switch to export feedback as `R1, R2` or `R1: description`.
 
 ## Keyboard Shortcuts
 

@@ -2,6 +2,18 @@
 
 This guide covers the project architecture, conventions, and common tasks so new contributors can get productive quickly.
 
+## Prerequisites
+
+- Node.js installed (LTS recommended)
+- npm installed (included with Node.js)
+
+If you do not have Node.js and npm, install them from <https://nodejs.org>.
+
+## Project Links
+
+- Hosted app: <https://wdt.samuelbruin.com>
+- Questions or support: <wdt@samuelbruin.com>
+
 ## Quick Start
 
 ```bash
@@ -140,7 +152,12 @@ Add a case to `handleKeydown()` in `ReviewTab.svelte`. Check that `event.target`
 
 ### Modifying the export format
 
-Edit `handleExport()` in `AssignmentPage.svelte`. The `_metadata` field stores export info for re-import compatibility. Be careful with backward compatibility: the import logic in `App.svelte` handles both old and new formats.
+Edit `buildShareExportData()`, `buildWebLabExportData()`, and `buildExportQueries()` in `AssignmentPage.svelte`.
+
+- Share export writes project metadata for re-import compatibility.
+- WebLab export copies a metadata-free payload to clipboard and falls back to file download if clipboard access fails.
+
+Keep backward compatibility in mind. The import logic in `App.svelte` supports both old and new formats.
 
 ## Deployment
 
